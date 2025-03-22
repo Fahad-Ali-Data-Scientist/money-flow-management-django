@@ -1,0 +1,212 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Customer Details - Financial Management System{% endblock %}
+
+{% block page_title %}Customer Details{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card mb-4">
+                <div class="card-header {% if customer.exceeds_credit_limit %}bg-danger{% else %}bg-primary{% endif %} text-white">
+                    <h5 class="card-title mb-0">
+                        {% if customer.exceeds_credit_limit %}
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                        {% else %}
+                            <i class="fas fa-user me-2"></i>
+                        {% endif %}
+                        Customer Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Customer Code:</div>
+                        <div class="col-md-7">{{ customer.customer_code }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Name (English):</div>
+                        <div class="col-md-7">{{ customer.name_english }}</div>
+                    </div>
+                    {% if customer.name_urdu %}
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Name (Urdu):</div>
+                        <div class="col-md-7">{{ customer.name_urdu }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Shop Name:</div>
+                        <div class="col-md-7">{{ customer.shop_name }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Phone Number:</div>
+                        <div class="col-md-7">{{ customer.phone_number }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Area:</div>
+                        <div class="col-md-7">{{ customer.area.name|default:"--" }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Category:</div>
+                        <div class="col-md-7">
+                            {% if customer.category == 'vip' %}
+                                <span class="badge bg-warning">VIP</span>
+                            {% else %}
+                                <span class="badge bg-secondary">Regular</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% if customer.address %}
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Address:</div>
+                        <div class="col-md-7">{{ customer.address }}</div>
+                    </div>
+                    {% endif %}
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Date Added:</div>
+                        <div class="col-md-7">{{ customer.date_added|date:"d M Y" }}</div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Opening Balance:</div>
+                        <div class="col-md-7">{{ customer.opening_balance }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Current Balance:</div>
+                        <div class="col-md-7">
+                            <strong {% if customer.exceeds_credit_limit %}class="text-danger"{% endif %}>
+                                {{ customer.balance }}
+                            </strong>
+                        </div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Credit Limit:</div>
+                        <div class="col-md-7">{{ customer.credit_limit_amount }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Credit Days:</div>
+                        <div class="col-md-7">{{ customer.credit_limit_days }}</div>
+                    </div>
+                    <div class="row mb-2">
+                        <div class="col-md-5 text-muted">Outstanding:</div>
+                        <div class="col-md-7">{{ customer.outstanding_amount }}</div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 mt-3">
+                        <a href="{% url 'edit_customer' customer.id %}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-1"></i> Edit Customer
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-money-bill-alt me-2"></i>Record Payment
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'customer_detail' customer.id %}">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ payment_form.amount.id_for_label }}" class="form-label">Amount *</label>
+                                {{ payment_form.amount }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ payment_form.payment_date.id_for_label }}" class="form-label">Payment Date *</label>
+                                {{ payment_form.payment_date }}
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="{{ payment_form.due_date.id_for_label }}" class="form-label">Due Date</label>
+                                {{ payment_form.due_date }}
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="form-check mt-4">
+                                    {{ payment_form.is_paid }}
+                                    <label class="form-check-label" for="{{ payment_form.is_paid.id_for_label }}">
+                                        Payment Received
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="{{ payment_form.notes.id_for_label }}" class="form-label">Notes</label>
+                            {{ payment_form.notes }}
+                        </div>
+                        
+                        <!-- Hidden field for customer -->
+                        {{ payment_form.customer.as_hidden }}
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check-circle me-1"></i> Record Payment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="fas fa-history me-2"></i>Payment History
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if payments %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Amount</th>
+                                        <th>Due Date</th>
+                                        <th>Status</th>
+                                        <th>Notes</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for payment in payments %}
+                                    <tr>
+                                        <td>{{ payment.payment_date|date:"d M Y" }}</td>
+                                        <td>{{ payment.amount }}</td>
+                                        <td>{{ payment.due_date|date:"d M Y"|default:"-" }}</td>
+                                        <td>
+                                            {% if payment.is_paid %}
+                                                <span class="badge bg-success">Paid</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Pending</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ payment.notes|default:"-" }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-center text-muted py-3">No payment history available.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

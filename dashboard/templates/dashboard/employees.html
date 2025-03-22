@@ -1,0 +1,266 @@
+{% extends 'dashboard_base.html' %}
+
+{% block title %}Employees - Financial Management System{% endblock %}
+
+{% block page_title %}Employee Management{% endblock %}
+
+{% block dashboard_content %}
+<div class="container-fluid">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4>All Employees</h4>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+            <i class="fas fa-plus-circle me-1"></i> Add New Employee
+        </button>
+    </div>
+    
+    <div class="table-responsive">
+        <table class="table table-hover" id="employeesTable">
+            <thead>
+                <tr>
+                    <th>Employee Code</th>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Phone Number</th>
+                    <th>Date of Joining</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ employee.employee_code }}</td>
+                    <td>{{ employee.name }}</td>
+                    <td>{{ employee.get_category_display }}</td>
+                    <td>{{ employee.phone_number }}</td>
+                    <td>{{ employee.date_of_joining|date:"d M Y" }}</td>
+                    <td>
+                        {% if employee.status == 'active' %}
+                            <span class="badge bg-success">Active</span>
+                        {% elif employee.status == 'resigned' %}
+                            <span class="badge bg-danger">Resigned</span>
+                        {% elif employee.status == 'terminated' %}
+                            <span class="badge bg-dark">Terminated</span>
+                        {% elif employee.status == 'on_leave' %}
+                            <span class="badge bg-warning text-dark">On Leave</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <a href="{% url 'edit_employee' employee.id %}" class="btn btn-outline-primary">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button type="button" class="btn btn-outline-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteEmployeeModal" 
+                                    data-employee-id="{{ employee.id }}" 
+                                    data-employee-name="{{ employee.name }}">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center text-muted py-3">No employees have been added yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Add Employee Modal -->
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addEmployeeModalLabel">Add New Employee</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="post" action="{% url 'employees' %}">
+                <div class="modal-body">
+                    {% csrf_token %}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.employee_code.id_for_label }}" class="form-label">{{ form.employee_code.label }} *</label>
+                            {{ form.employee_code }}
+                            {% if form.employee_code.errors %}
+                                <div class="text-danger">{{ form.employee_code.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }} *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger">{{ form.name.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }} *</label>
+                            {{ form.category }}
+                            {% if form.category.errors %}
+                                <div class="text-danger">{{ form.category.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }} *</label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                                <div class="text-danger">{{ form.phone_number.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">{{ form.email.label }}</label>
+                            {{ form.email }}
+                            {% if form.email.errors %}
+                                <div class="text-danger">{{ form.email.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.cnic.id_for_label }}" class="form-label">{{ form.cnic.label }}</label>
+                            {{ form.cnic }}
+                            {% if form.cnic.errors %}
+                                <div class="text-danger">{{ form.cnic.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">{{ form.date_of_birth.label }}</label>
+                            {{ form.date_of_birth }}
+                            {% if form.date_of_birth.errors %}
+                                <div class="text-danger">{{ form.date_of_birth.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.date_of_joining.id_for_label }}" class="form-label">{{ form.date_of_joining.label }} *</label>
+                            {{ form.date_of_joining }}
+                            {% if form.date_of_joining.errors %}
+                                <div class="text-danger">{{ form.date_of_joining.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.referred_by.id_for_label }}" class="form-label">{{ form.referred_by.label }}</label>
+                            {{ form.referred_by }}
+                            {% if form.referred_by.errors %}
+                                <div class="text-danger">{{ form.referred_by.errors }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }} *</label>
+                            {{ form.status }}
+                            {% if form.status.errors %}
+                                <div class="text-danger">{{ form.status.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                        {{ form.address }}
+                        {% if form.address.errors %}
+                            <div class="text-danger">{{ form.address.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.date_of_resignation.id_for_label }}" class="form-label">{{ form.date_of_resignation.label }}</label>
+                        {{ form.date_of_resignation }}
+                        {% if form.date_of_resignation.errors %}
+                            <div class="text-danger">{{ form.date_of_resignation.errors }}</div>
+                        {% endif %}
+                        <div class="form-text">Only fill this if the employee has resigned or been terminated.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Add Employee</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Employee Modal -->
+<div class="modal fade" id="deleteEmployeeModal" tabindex="-1" aria-labelledby="deleteEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteEmployeeModalLabel">Delete Employee</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="employeeNameToDelete"></strong>? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <a id="deleteEmployeeBtn" href="#" class="btn btn-danger">Delete</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize datatable
+        $('#employeesTable').DataTable({
+            order: [[1, 'asc']], // Sort by name
+            language: {
+                search: "Filter records:",
+                lengthMenu: "Show _MENU_ employees per page",
+                info: "Showing _START_ to _END_ of _TOTAL_ employees"
+            }
+        });
+        
+        // Setup delete modal - using the modal event instead of button click
+        $('#deleteEmployeeModal').on('show.bs.modal', function(event) {
+            var button = $(event.relatedTarget);
+            var employeeId = button.data('employee-id');
+            var employeeName = button.data('employee-name');
+            
+            $('#employeeNameToDelete').text(employeeName);
+            
+            // Set delete button href
+            var deleteUrl = '{% url "delete_employee" 0 %}'.replace('0', employeeId);
+            $('#deleteEmployeeBtn').attr('href', deleteUrl);
+            
+            // Add POST method to the delete link
+            $('#deleteEmployeeBtn').off('click').on('click', function(e) {
+                e.preventDefault();
+                
+                // Create a form dynamically
+                var form = $('<form></form>');
+                form.attr('method', 'post');
+                form.attr('action', deleteUrl);
+                form.append('{% csrf_token %}');
+                
+                // Submit the form
+                $('body').append(form);
+                form.submit();
+            });
+        });
+    });
+</script>
+{% endblock %}
+{% endblock %} 

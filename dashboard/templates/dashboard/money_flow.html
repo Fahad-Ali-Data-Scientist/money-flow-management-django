@@ -1,0 +1,354 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Money Flow & Transaction Tracking{% endblock %}
+
+{% block page_title %}Money Flow & Transaction Tracking{% endblock %}
+
+{% block dashboard_content %}
+<!-- Messages Section -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Date Range Filter -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="card-title mb-0">Filter by Date Range</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <label for="start_date" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="start_date" name="start_date" value="{{ start_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4">
+                <label for="end_date" class="form-label">End Date</label>
+                <input type="date" class="form-control" id="end_date" name="end_date" value="{{ end_date|date:'Y-m-d' }}">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary">Apply Filter</button>
+                <a href="{% url 'money_flow' %}" class="btn btn-secondary ms-2">Reset</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <!-- Money Flow Visualizations -->
+    <div class="col-md-12 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Money Flow Visualization</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <!-- Entity Flow -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="border-bottom pb-2">Money Flow by Entity Type</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Entity Type</th>
+                                        <th>Incoming (Rs)</th>
+                                        <th>Outgoing (Rs)</th>
+                                        <th>Net (Rs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for entity_type, data in flow_by_entity.items %}
+                                        <tr>
+                                            <td>{{ data.name }}</td>
+                                            <td class="text-success">{{ data.incoming|floatformat:2 }}</td>
+                                            <td class="text-danger">{{ data.outgoing|floatformat:2 }}</td>
+                                            <td class="{% if data.net > 0 %}text-success{% elif data.net < 0 %}text-danger{% endif %}">
+                                                {{ data.net|floatformat:2 }}
+                                            </td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="4" class="text-center">No data available</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Transaction Type Flow -->
+                    <div class="col-md-6 mb-4">
+                        <h6 class="border-bottom pb-2">Money Flow by Transaction Type</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Transaction Type</th>
+                                        <th>Total Amount (Rs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for t_type, data in flow_by_type.items %}
+                                        <tr>
+                                            <td>{{ data.name }}</td>
+                                            <td>{{ data.total|floatformat:2 }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">No data available</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Employee Collection -->
+                    <div class="col-md-12">
+                        <h6 class="border-bottom pb-2">Money Collected by Employees</h6>
+                        <div class="table-responsive">
+                            <table class="table table-bordered">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Employee Name</th>
+                                        <th>Amount Collected (Rs)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for emp_id, data in employee_collection.items %}
+                                        <tr>
+                                            <td>{{ data.name }}</td>
+                                            <td>{{ data.collected|floatformat:2 }}</td>
+                                        </tr>
+                                    {% empty %}
+                                        <tr>
+                                            <td colspan="2" class="text-center">No data available</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Add Transaction Form -->
+    <div class="col-md-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Add New Transaction</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.transaction_id.id_for_label }}" class="form-label">Transaction ID</label>
+                        {{ form.transaction_id }}
+                        {% if form.transaction_id.errors %}
+                            <div class="text-danger">{{ form.transaction_id.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">Amount</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="text-danger">{{ form.amount.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.transaction_date.id_for_label }}" class="form-label">Transaction Date</label>
+                        {{ form.transaction_date }}
+                        {% if form.transaction_date.errors %}
+                            <div class="text-danger">{{ form.transaction_date.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.transaction_type.id_for_label }}" class="form-label">Transaction Type</label>
+                        {{ form.transaction_type }}
+                        {% if form.transaction_type.errors %}
+                            <div class="text-danger">{{ form.transaction_type.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.source_entity_type.id_for_label }}" class="form-label">Source Entity Type</label>
+                            {{ form.source_entity_type }}
+                            {% if form.source_entity_type.errors %}
+                                <div class="text-danger">{{ form.source_entity_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.source_entity_id.id_for_label }}" class="form-label">Source Entity ID</label>
+                            {{ form.source_entity_id }}
+                            {% if form.source_entity_id.errors %}
+                                <div class="text-danger">{{ form.source_entity_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.destination_entity_type.id_for_label }}" class="form-label">Destination Entity Type</label>
+                            {{ form.destination_entity_type }}
+                            {% if form.destination_entity_type.errors %}
+                                <div class="text-danger">{{ form.destination_entity_type.errors }}</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="{{ form.destination_entity_id.id_for_label }}" class="form-label">Destination Entity ID</label>
+                            {{ form.destination_entity_id }}
+                            {% if form.destination_entity_id.errors %}
+                                <div class="text-danger">{{ form.destination_entity_id.errors }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.responsible_person.id_for_label }}" class="form-label">Responsible Person</label>
+                        {{ form.responsible_person }}
+                        {% if form.responsible_person.errors %}
+                            <div class="text-danger">{{ form.responsible_person.errors }}</div>
+                        {% endif %}
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Add Transaction</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Transactions List -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Transaction List</h5>
+            </div>
+            <div class="card-body">
+                {% if transactions %}
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="transactions-table">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Amount</th>
+                                    <th>From</th>
+                                    <th>To</th>
+                                    <th>Responsible</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for transaction in transactions %}
+                                    <tr>
+                                        <td>{{ transaction.transaction_id }}</td>
+                                        <td>{{ transaction.transaction_date }}</td>
+                                        <td>{{ transaction.get_transaction_type_display }}</td>
+                                        <td>Rs{{ transaction.amount|floatformat:2 }}</td>
+                                        <td>{{ transaction.get_source_entity_type_display }} #{{ transaction.source_entity_id }}</td>
+                                        <td>{{ transaction.get_destination_entity_type_display }} #{{ transaction.destination_entity_id }}</td>
+                                        <td>{{ transaction.responsible_person.name }}</td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <a href="{% url 'edit_transaction' transaction.id %}" class="btn btn-primary btn-sm" title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-danger btn-sm delete-btn" 
+                                                        data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                                        data-id="{{ transaction.id }}" data-tid="{{ transaction.transaction_id }}" title="Delete">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">No transactions found in the selected date range. Add your first transaction using the form.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete transaction <strong id="transaction-id"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" action="">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable
+        $('#transactions-table').DataTable({
+            "order": [[1, "desc"]], // Sort by date (column index 1) descending
+            "pageLength": 10,
+            "language": {
+                "lengthMenu": "Show _MENU_ transactions per page",
+                "zeroRecords": "No transactions found",
+                "info": "Showing page _PAGE_ of _PAGES_",
+                "infoEmpty": "No transactions available",
+                "infoFiltered": "(filtered from _MAX_ total transactions)"
+            }
+        });
+        
+        // Handle delete modal
+        $('.delete-btn').click(function() {
+            var id = $(this).data('id');
+            var tid = $(this).data('tid');
+            $('#transaction-id').text(tid);
+            $('#deleteForm').attr('action', '/money-flow/delete/' + id + '/');
+        });
+    });
+</script>
+{% endblock %}
+
+{% endblock %} 

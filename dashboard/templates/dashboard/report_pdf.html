@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% if report_type == 'date_collections' %}
+        Date-wise Collections
+    {% elif report_type == 'employee_collections' %}
+        Employee-wise Collections
+    {% elif report_type == 'company_balance' %}
+        Company Balances
+    {% elif report_type == 'area_balance' %}
+        Area Balances
+    {% elif report_type == 'cash_receiver' %}
+        Cash Receiver Summary
+    {% else %}
+        Report
+    {% endif %}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+        }
+        h1 {
+            font-size: 18px;
+            text-align: center;
+            margin-bottom: 10px;
+            color: #1a5276;
+        }
+        .date-range {
+            text-align: center;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .footer {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 10px;
+            padding: 10px 0;
+            border-top: 1px solid #ddd;
+        }
+        .summary-row {
+            font-weight: bold;
+            background-color: #eaf2f8;
+        }
+        .currency {
+            text-align: right;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header img {
+            max-height: 60px;
+            margin-bottom: 10px;
+        }
+        .header h2 {
+            margin: 0;
+            font-size: 24px;
+            color: #1a5276;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Financial Management System</h2>
+        <p>Generated on: {{ now|date:"F d, Y" }}</p>
+    </div>
+
+    <h1>
+        {% if report_type == 'date_collections' %}
+            Date-wise Collections Report
+        {% elif report_type == 'employee_collections' %}
+            Employee-wise Collections Report
+        {% elif report_type == 'company_balance' %}
+            Company Balances Report
+        {% elif report_type == 'area_balance' %}
+            Area Balances Report
+        {% elif report_type == 'cash_receiver' %}
+            Cash Receiver Summary Report
+        {% else %}
+            Report
+        {% endif %}
+    </h1>
+    
+    <div class="date-range">
+        Period: {{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }}
+    </div>
+    
+    {% if report_data %}
+        {% if report_type == 'date_collections' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th class="currency">Total Collections</th>
+                        <th class="text-center">Number of Payments</th>
+                        <th class="currency">Average Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                        <tr>
+                            <td>{{ item.date|date:"d M Y" }}</td>
+                            <td class="currency">Rs{{ item.total_amount|floatformat:2 }}</td>
+                            <td class="text-center">{{ item.payment_count }}</td>
+                            <td class="currency">Rs{{ item.average_amount|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td>Total</td>
+                        <td class="currency">Rs{{ report_summary.total_amount|floatformat:2 }}</td>
+                        <td class="text-center">{{ report_summary.total_count }}</td>
+                        <td class="currency">Rs{{ report_summary.overall_average|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+        {% elif report_type == 'employee_collections' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th class="currency">Total Collections</th>
+                        <th class="text-center">Number of Payments</th>
+                        <th class="currency">Average Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                        <tr>
+                            <td>{{ item.employee_name }}</td>
+                            <td class="currency">Rs{{ item.total_amount|floatformat:2 }}</td>
+                            <td class="text-center">{{ item.payment_count }}</td>
+                            <td class="currency">Rs{{ item.average_amount|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td>Total</td>
+                        <td class="currency">Rs{{ report_summary.total_amount|floatformat:2 }}</td>
+                        <td class="text-center">{{ report_summary.total_count }}</td>
+                        <td class="currency">Rs{{ report_summary.overall_average|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+        {% elif report_type == 'company_balance' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Company</th>
+                        <th class="text-center">Total Customers</th>
+                        <th class="currency">Total Balance</th>
+                        <th class="currency">Average Balance per Customer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                        <tr>
+                            <td>{{ item.company_name }}</td>
+                            <td class="text-center">{{ item.customer_count }}</td>
+                            <td class="currency">Rs{{ item.total_balance|floatformat:2 }}</td>
+                            <td class="currency">Rs{{ item.average_balance|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td>Total</td>
+                        <td class="text-center">{{ report_summary.total_customers }}</td>
+                        <td class="currency">Rs{{ report_summary.total_balance|floatformat:2 }}</td>
+                        <td class="currency">Rs{{ report_summary.overall_average|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+        {% elif report_type == 'area_balance' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Area</th>
+                        <th class="text-center">Total Customers</th>
+                        <th class="currency">Total Balance</th>
+                        <th class="currency">Average Balance per Customer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                        <tr>
+                            <td>{{ item.area_name }}</td>
+                            <td class="text-center">{{ item.customer_count }}</td>
+                            <td class="currency">Rs{{ item.total_balance|floatformat:2 }}</td>
+                            <td class="currency">Rs{{ item.average_balance|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td>Total</td>
+                        <td class="text-center">{{ report_summary.total_customers }}</td>
+                        <td class="currency">Rs{{ report_summary.total_balance|floatformat:2 }}</td>
+                        <td class="currency">Rs{{ report_summary.overall_average|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+        {% elif report_type == 'cash_receiver' %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Category</th>
+                        <th class="currency">Total Collected</th>
+                        <th class="text-center">Number of Transactions</th>
+                        <th class="currency">Average Transaction</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                        <tr>
+                            <td>{{ item.employee_name }}</td>
+                            <td>{{ item.category }}</td>
+                            <td class="currency">Rs{{ item.total_amount|floatformat:2 }}</td>
+                            <td class="text-center">{{ item.transaction_count }}</td>
+                            <td class="currency">Rs{{ item.average_amount|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="summary-row">
+                        <td colspan="2">Total</td>
+                        <td class="currency">Rs{{ report_summary.total_amount|floatformat:2 }}</td>
+                        <td class="text-center">{{ report_summary.total_count }}</td>
+                        <td class="currency">Rs{{ report_summary.overall_average|floatformat:2 }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        {% endif %}
+    {% else %}
+        <p class="text-center">No data available for the selected filters.</p>
+    {% endif %}
+    
+    <div class="footer">
+        Financial Management System - Generated Report - Page 1
+    </div>
+</body>
+</html> 

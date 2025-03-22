@@ -1,0 +1,223 @@
+{% extends 'dashboard/dashboard_base.html' %}
+
+{% block title %}Expenses{% endblock %}
+
+{% block page_title %}Expenses Management{% endblock %}
+
+{% block dashboard_content %}
+<div class="row mb-4">
+    <div class="col-md-12">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Add New Expense</h5>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'expenses' %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.expense_code.id_for_label }}" class="form-label">{{ form.expense_code.label }}</label>
+                        {{ form.expense_code }}
+                        {% if form.expense_code.errors %}
+                            <div class="text-danger">{{ form.expense_code.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.amount.id_for_label }}" class="form-label">{{ form.amount.label }}</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                            <div class="text-danger">{{ form.amount.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.category.id_for_label }}" class="form-label">{{ form.category.label }}</label>
+                        {{ form.category }}
+                        {% if form.category.errors %}
+                            <div class="text-danger">{{ form.category.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.date.id_for_label }}" class="form-label">{{ form.date.label }}</label>
+                        {{ form.date }}
+                        {% if form.date.errors %}
+                            <div class="text-danger">{{ form.date.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger">{{ form.description.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Expense</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Expense Summary</h5>
+                <a href="{% url 'expense_report' %}" class="btn btn-sm btn-light">View Detailed Report</a>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="card bg-success text-white">
+                            <div class="card-body text-center">
+                                <h5 class="card-title">Total Expenses</h5>
+                                <h3 class="mb-0">Rs. {{ total_expenses|floatformat:2 }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Expenses by Category</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group">
+                                    {% for category, amount in expense_by_category.items %}
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            {{ category }}
+                                            <span class="badge bg-primary rounded-pill">Rs. {{ amount|floatformat:2 }}</span>
+                                        </li>
+                                    {% empty %}
+                                        <li class="list-group-item">No expenses recorded yet</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">All Expenses</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-striped" id="expenseTable">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses %}
+                                <tr>
+                                    <td>{{ expense.expense_code }}</td>
+                                    <td>{{ expense.name }}</td>
+                                    <td>{{ expense.get_category_display }}</td>
+                                    <td class="text-end">Rs. {{ expense.amount|floatformat:2 }}</td>
+                                    <td>{{ expense.date|date:"d M Y" }}</td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{% url 'edit_expense' expense.id %}" class="btn btn-sm btn-primary">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#deleteExpenseModal" 
+                                                data-expense-id="{{ expense.id }}" data-expense-name="{{ expense.name }}">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">No expenses recorded yet</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Expense Modal -->
+<div class="modal fade" id="deleteExpenseModal" tabindex="-1" aria-labelledby="deleteExpenseModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="deleteExpenseModalLabel">Delete Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete <strong id="expenseNameText"></strong>?</p>
+                <p class="text-danger">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteExpense">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    $(document).ready(function() {
+        // Initialize DataTable
+        $('#expenseTable').DataTable({
+            "order": [[4, "desc"]] // Sort by date column (index 4) in descending order
+        });
+        
+        // Handle delete modal
+        $('#deleteExpenseModal').on('show.bs.modal', function(event) {
+            const button = $(event.relatedTarget);
+            const expenseId = button.data('expense-id');
+            const expenseName = button.data('expense-name');
+            
+            $('#expenseNameText').text(expenseName);
+            
+            $('#confirmDeleteExpense').off('click').on('click', function() {
+                // Create a form to submit the delete request
+                const form = $('<form>', {
+                    'method': 'post',
+                    'action': `/dashboard/expenses/delete/${expenseId}/`
+                }).append($('<input>', {
+                    'type': 'hidden',
+                    'name': 'csrfmiddlewaretoken',
+                    'value': $('input[name="csrfmiddlewaretoken"]').val()
+                }));
+                
+                $('body').append(form);
+                form.submit();
+            });
+        });
+    });
+</script>
+{% endblock %} 

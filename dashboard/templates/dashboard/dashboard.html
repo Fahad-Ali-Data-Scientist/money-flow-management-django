@@ -1,0 +1,315 @@
+{% extends "dashboard/dashboard_base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block dashboard_content %}
+<!-- Messages Section -->
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<!-- Period Filters -->
+<div class="mb-4">
+    <div class="btn-group" role="group" aria-label="Time period filters">
+        <a href="{% url 'dashboard' %}?period=day" class="btn btn-{% if period == 'day' %}primary{% else %}outline-primary{% endif %}">Today</a>
+        <a href="{% url 'dashboard' %}?period=week" class="btn btn-{% if period == 'week' %}primary{% else %}outline-primary{% endif %}">This Week</a>
+        <a href="{% url 'dashboard' %}?period=month" class="btn btn-{% if period == 'month' %}primary{% else %}outline-primary{% endif %}">This Month</a>
+    </div>
+    <span class="text-muted ms-3">{{ start_date|date:"d M Y" }} - {{ end_date|date:"d M Y" }}</span>
+</div>
+
+<!-- Summary Cards Row -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title">Total Income</h6>
+                <h3 class="display-6">Rs{{ total_income|floatformat:2 }}</h3>
+                <p class="card-text">For selected period</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-danger text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title">Total Expenses</h6>
+                <h3 class="display-6">Rs{{ total_expenses|floatformat:2 }}</h3>
+                <p class="card-text">For selected period</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card {% if net_income >= 0 %}bg-success{% else %}bg-danger{% endif %} text-white h-100">
+            <div class="card-body">
+                <h6 class="card-title">Net Income</h6>
+                <h3 class="display-6">Rs{{ net_income|floatformat:2 }}</h3>
+                <p class="card-text">Income - Expenses</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card bg-warning text-dark h-100">
+            <div class="card-body">
+                <h6 class="card-title">Outstanding Receivables</h6>
+                <h3 class="display-6">Rs{{ total_receivables|floatformat:2 }}</h3>
+                <p class="card-text">{{ overdue_receivables_count }} overdue</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row mb-4">
+    <!-- Daily Collections Chart -->
+    <div class="col-lg-8 mb-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">Daily Collections</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="collectionsChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Expense Categories Chart -->
+    <div class="col-lg-4 mb-4">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Expense Breakdown</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="expensesChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats and Area Row -->
+<div class="row">
+    <!-- Stats -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5 class="card-title mb-0">System Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table">
+                            <tbody>
+                                <tr>
+                                    <th>Total Customers</th>
+                                    <td>{{ total_customers }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Companies</th>
+                                    <td>{{ total_companies }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Total Banks</th>
+                                    <td>{{ total_banks }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Active Employees</th>
+                                    <td>{{ active_employees }} / {{ total_employees }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Customer Exceeding Credit</th>
+                                    <td>
+                                        <span class="badge bg-danger">{{ credit_exceeded_count }}</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="border-bottom pb-2">Employee Categories</h6>
+                        <div class="chart-container" style="position: relative; height:180px;">
+                            <canvas id="employeeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Area Balances -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="card-title mb-0">Area Balances</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Area Name</th>
+                                <th>Customers</th>
+                                <th>Total Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for area in area_data %}
+                                <tr>
+                                    <td>{{ area.name }}</td>
+                                    <td>{{ area.customer_count }}</td>
+                                    <td>Rs{{ area.total_balance|floatformat:2 }}</td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">No areas found</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Daily Collections Chart
+    const collectionsCtx = document.getElementById('collectionsChart').getContext('2d');
+    const collectionsChart = new Chart(collectionsCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels|safe }},
+            datasets: [{
+                label: 'Daily Collections (Rs)',
+                data: {{ chart_data|safe }},
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rs' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Rs' + context.parsed.y.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Expense Categories Chart
+    const expensesCtx = document.getElementById('expensesChart').getContext('2d');
+    const expensesChart = new Chart(expensesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ expense_category_labels|safe }},
+            datasets: [{
+                data: {{ expense_category_data|safe }},
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.7)',
+                    'rgba(54, 162, 235, 0.7)',
+                    'rgba(255, 206, 86, 0.7)',
+                    'rgba(75, 192, 192, 0.7)',
+                    'rgba(153, 102, 255, 0.7)',
+                    'rgba(255, 159, 64, 0.7)',
+                    'rgba(199, 199, 199, 0.7)',
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'right',
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed || 0;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                            return `${label}: Rs.${value.toLocaleString()} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // Employee Categories Chart
+    const employeeCtx = document.getElementById('employeeChart').getContext('2d');
+    const employeeData = {
+        labels: [
+            {% for category, count in employee_category_stats.items %}
+                '{{ category }}',
+            {% endfor %}
+        ],
+        datasets: [{
+            data: [
+                {% for category, count in employee_category_stats.items %}
+                    {{ count }},
+                {% endfor %}
+            ],
+            backgroundColor: [
+                'rgba(255, 99, 132, 0.7)',
+                'rgba(54, 162, 235, 0.7)',
+                'rgba(255, 206, 86, 0.7)',
+                'rgba(75, 192, 192, 0.7)',
+                'rgba(153, 102, 255, 0.7)',
+                'rgba(255, 159, 64, 0.7)'
+            ],
+            borderWidth: 1
+        }]
+    };
+    
+    const employeeChart = new Chart(employeeCtx, {
+        type: 'pie',
+        data: employeeData,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
+
+{% endblock %} 

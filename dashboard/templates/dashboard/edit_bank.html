@@ -1,0 +1,81 @@
+{% extends 'dashboard/dashboard_base.html' %}
+
+{% block title %}Edit Bank{% endblock %}
+
+{% block page_title %}Edit Bank{% endblock %}
+
+{% block dashboard_content %}
+<div class="row">
+    <div class="col-md-12">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Edit Bank: {{ bank.name }}</h5>
+                <span class="badge bg-info">{{ bank.account_number }}</span>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'edit_bank' bank.id %}">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="{{ form.bank_code.id_for_label }}" class="form-label">{{ form.bank_code.label }}</label>
+                        {{ form.bank_code }}
+                        {% if form.bank_code.errors %}
+                            <div class="text-danger">{{ form.bank_code.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                        {{ form.name }}
+                        {% if form.name.errors %}
+                            <div class="text-danger">{{ form.name.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.account_number.id_for_label }}" class="form-label">{{ form.account_number.label }}</label>
+                        {{ form.account_number }}
+                        {% if form.account_number.errors %}
+                            <div class="text-danger">{{ form.account_number.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.branch.id_for_label }}" class="form-label">{{ form.branch.label }}</label>
+                        {{ form.branch }}
+                        {% if form.branch.errors %}
+                            <div class="text-danger">{{ form.branch.errors }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="mb-3">
+                        <label for="{{ form.opening_balance.id_for_label }}" class="form-label">{{ form.opening_balance.label }}</label>
+                        {{ form.opening_balance }}
+                        {% if form.opening_balance.errors %}
+                            <div class="text-danger">{{ form.opening_balance.errors }}</div>
+                        {% endif %}
+                        <div class="form-text text-warning">
+                            <i class="fas fa-exclamation-triangle"></i> Note: Changing the opening balance will affect the current balance.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Current Balance</label>
+                        <input type="text" class="form-control" value="Rs. {{ bank.current_balance|floatformat:2 }}" disabled>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'banks' %}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Update Bank</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
